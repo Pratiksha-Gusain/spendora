@@ -1,5 +1,6 @@
 package com.example.spendora.model;
 
+import com.example.spendora.service.transaction.TransactionBehavior;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,9 +27,9 @@ public class PaymentMode {
     @OneToMany(mappedBy = "paymentMode", fetch = FetchType.LAZY)
     private Set<Transaction> transactionSet;
 
-    @Enumerated(EnumType.STRING)
-    //private TransactionBehavior type;
 
+    @Enumerated(EnumType.STRING)
+    private TransactionBehavior type;
     public static PaymentMode ofId(Long paymentModeId) {
         return PaymentMode.builder().id(paymentModeId).build();
     }

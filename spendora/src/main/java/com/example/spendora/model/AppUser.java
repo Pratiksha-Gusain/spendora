@@ -20,8 +20,9 @@ import java.util.Set;
 
         private String name;
         private String email;
+        private String password;
 
-        private Long createdAt;
+        private Long createdAt = System.currentTimeMillis();
         private Long updatedAt;
         private Long lastLoginAt;
         private Long lastInsightAt;
@@ -43,6 +44,12 @@ import java.util.Set;
 
         @OneToMany(mappedBy = "appUser", fetch = FetchType.LAZY)
         private Set<Category> categorySet;
+
+        public static AppUser ofId(String id){
+            return AppUser.builder().id(id).build();
+        }
+
+
 
 
 

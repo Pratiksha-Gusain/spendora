@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: spendora
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+
+
+
+
+
+

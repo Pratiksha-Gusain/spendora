@@ -1,11 +1,13 @@
 package com.example.spendora.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -20,14 +22,14 @@ public class Account {
 
     private String lastFourDigit;
     private Double balance;
-    private Long createdAt;
-    private long updatedAt;
+    private Long createdAt = System.currentTimeMillis();
+    private Long updatedAt= System.currentTimeMillis();
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_app_id")
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_user_id")
     private AppUser appUser;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name="bank_name_id")
     private Bank bank;
 
@@ -36,4 +38,7 @@ public class Account {
 
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private Set<Transaction> transactionSet;
+    public static Account ofId(Long accountId) {
+        return Account.builder().id(accountId).build();
+    }
 }

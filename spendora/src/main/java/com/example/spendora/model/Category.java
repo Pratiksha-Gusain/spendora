@@ -27,7 +27,8 @@ public class Category {
     @JoinColumn(name = "app_user_id")
     private AppUser appUser;
 
-    public static Category ofId(Long accountId) {
-        return Category.builder().id(accountId).build();
+    public static Category ofId(Long categoryId) {
+
+        return Category.builder().id(categoryId).build();
     }
 }
