@@ -1,19 +1,14 @@
 package com.example.spendora;
 
-import com.example.spendora.dto.CreateTransactionDto;
 import com.example.spendora.model.Account;
 import com.example.spendora.model.AppUser;
 import com.example.spendora.repository.AccountRepo;
 import com.example.spendora.repository.AppUserRepo;
 import com.example.spendora.repository.BankRepo;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor

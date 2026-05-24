@@ -1,8 +1,7 @@
 package com.example.spendora.service.transaction;
 
-import com.example.spendora.dto.CreateTransactionDto;
 import com.example.spendora.dto.TransactionDto;
-import com.example.spendora.dto.UpdateTransactionDto;
+import com.example.spendora.dto.TransactionRequestDto;
 import com.example.spendora.exception.*;
 import com.example.spendora.mapper.TransactionMapper;
 import com.example.spendora.model.*;
@@ -30,69 +29,51 @@ public class TransactionsServiceImpl implements TransactionsService {
     private final TransactionMapper transactionMapper;
     @Transactional
     @Override
-    public TransactionDto saveTransaction(String appUserId, CreateTransactionDto requestBody) throws InsufficientAccountBalanceException {
-        final var accountId = requestBody.accountId();
-        final var categoryId = requestBody.categoryId();
-        final var paymentModeId = requestBody.paymentModeId();
-        final var toAccountId = requestBody.toAccountId();
-        final var type = requestBody.type();
+    public TransactionDto saveTransaction(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
+        getAndValidateAccounts(requestBody, appUserId);
+        if(TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER){
+            return handleTransfer(appUserId, requestBody);
+        }
+
+        return handleExpenseOrIncome(appUserId, requestBody);
+    }
+    public void getAndValidateAccounts(TransactionRequestDto dto, String appUserId){
+        final var accountId = dto.accountId();
+        final var categoryId = dto.categoryId();
+        final var paymentModeId = dto.paymentModeId();
+        final var toAccountId = dto.toAccountId();
+        final var type = dto.type();
 
         List<Long> accounts = getAccounts(accountId, type, toAccountId);
 
         validateAccountCategoryAndPaymentMode(appUserId, accounts, categoryId, paymentModeId);
-
-        if(TransactionType.valueOf(type) == TransactionType.TRANSFER){
-            return handleTransfer(appUserId, requestBody, accountId, toAccountId, type, categoryId, paymentModeId);
-        }
-
-        return handleExpenseOrIncome(appUserId, requestBody, accountId, type, categoryId, paymentModeId);
     }
 
-    private TransactionDto handleTransfer(String appUserId, CreateTransactionDto requestBody, Long accountId, Long toAccountId,String type, Long categoryId, Long paymentModeId) throws InsufficientAccountBalanceException {
-        accountService.updateBalance(accountId, requestBody.amount(), requestBody.paymentModeId(),type,true );
-        accountService.updateBalance(toAccountId, requestBody.amount(), requestBody.paymentModeId(),type,false);
+    private TransactionDto handleTransfer(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
+        accountService.updateBalance(requestBody.accountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), true );
+        accountService.updateBalance(requestBody.toAccountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), false);
 
         final var transferId = UUID.randomUUID().toString();
-        final var debitTransaction = Transaction.builder()
-                .appUser(AppUser.builder().id(appUserId).build())
-                .type(TransactionType.valueOf(type))
-                .amount(-requestBody.amount())
-                .category(Category.ofId(categoryId))
-                .paymentMode(PaymentMode.ofId(paymentModeId))
-                .description(requestBody.description())
-                .transactionDate(requestBody.transactionDate())
-                .transferId(transferId)
-                .build();
-        final var creditTransaction = Transaction.builder()
-                .appUser(AppUser.builder().id(appUserId).build())
-                .account(Account.ofId(toAccountId))
-                .type(TransactionType.valueOf(type))
-                .amount(requestBody.amount())
-                .category(Category.ofId(categoryId))
-                .paymentMode(PaymentMode.ofId(paymentModeId))
-                .description(requestBody.description())
-                .transactionDate(requestBody.transactionDate())
-                .build();
+        final var debitTransaction = new Transaction();
+        transactionMapper.transactionFromRequestDto(requestBody, debitTransaction, appUserId, transferId, true);
+
+        final var creditTransaction = new Transaction();
+        transactionMapper.transactionFromRequestDto(requestBody, creditTransaction, appUserId, null, false );
 
         transactionRepo.save(debitTransaction);
+
+
         final var savedTransaction = transactionRepo.save(creditTransaction);
 
         return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
     }
 
-    private TransactionDto handleExpenseOrIncome(String appUserId, CreateTransactionDto requestBody, Long accountId, String type, Long categoryId, Long paymentModeId) throws InsufficientAccountBalanceException {
-        accountService.updateBalance(accountId, requestBody.amount(), requestBody.paymentModeId(), type,false );
+    private TransactionDto handleExpenseOrIncome(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
+        accountService.updateBalance(requestBody.accountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), false );
 
-        final var transactionType = TransactionType.valueOf(type);
-        final var transaction = Transaction.builder()
-                .appUser(AppUser.builder().id(appUserId).build())
-                .type(TransactionType.valueOf(type))
-                .amount(transactionType ==  TransactionType.EXPENSE? -requestBody.amount(): requestBody.amount())
-                .category(Category.ofId(categoryId))
-                .paymentMode(PaymentMode.ofId(paymentModeId))
-                .description(requestBody.description())
-                .transactionDate(requestBody.transactionDate())
-                .build();
+        final var transaction = new Transaction();
+        transactionMapper.transactionFromRequestDto(requestBody, transaction, appUserId, null, false);
+
         final var savedTransaction = transactionRepo.save(transaction);
         return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
     }
@@ -131,21 +112,12 @@ public class TransactionsServiceImpl implements TransactionsService {
         return transactionMapper.transactionDtosToTransactionDtos(transactions);
     }
     @Override
-    public TransactionDto updateTransaction(String appUserId, UpdateTransactionDto requestBody) {
-        final var accountId = requestBody.accountId();
-        final var categoryId = requestBody.categoryId();
-        final var paymentModeId = requestBody.paymentModeId();
-        final var toAccountId = requestBody.toAccountId();
-        final var type = requestBody.type();
-
-        final var accounts = getAccounts(accountId, type, toAccountId);
-
-
-        validateAccountCategoryAndPaymentMode(appUserId, accounts, categoryId, paymentModeId);
+    public TransactionDto updateTransaction(String appUserId, TransactionRequestDto requestBody) {
+       getAndValidateAccounts(requestBody, appUserId);
 
         final var transaction = transactionRepo.findById(requestBody.transactionId())
                 .orElseThrow(()-> new TransactionNotFoundException(requestBody.transactionId()));
-        transactionMapper.updateTransactionFromDto(requestBody, transaction, appUserId);
+        transactionMapper.transactionFromRequestDto(requestBody, transaction, appUserId, null, false );
         final var savedTransaction = transactionRepo.save(transaction);
         return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
     }

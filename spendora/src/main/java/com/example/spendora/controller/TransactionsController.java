@@ -1,8 +1,7 @@
 package com.example.spendora.controller;
 
-import com.example.spendora.dto.CreateTransactionDto;
 import com.example.spendora.dto.TransactionDto;
-import com.example.spendora.dto.UpdateTransactionDto;
+import com.example.spendora.dto.TransactionRequestDto;
 import com.example.spendora.exception.InsufficientAccountBalanceException;
 import com.example.spendora.service.transaction.TransactionsService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ public class TransactionsController {
     private static  final String LOGGED_IN_USER = "dc17b28a-0ae6-4bb2-bbd6-6a910e242a52";
     private final TransactionsService transactionsService;
     @PostMapping
-    public ResponseEntity<TransactionDto> createTransaction(@RequestBody CreateTransactionDto requestBody) throws InsufficientAccountBalanceException {
+    public ResponseEntity<TransactionDto> createTransaction(@RequestBody TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
         final var responseBody= transactionsService.saveTransaction( LOGGED_IN_USER, requestBody);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -36,7 +35,7 @@ public class TransactionsController {
                 .body(responseBody);
     }
     @PatchMapping
-    public ResponseEntity<TransactionDto> updateTransaction(@RequestBody UpdateTransactionDto requestBody) {
+    public ResponseEntity<TransactionDto> updateTransaction(@RequestBody TransactionRequestDto requestBody) {
         final var responseBody = transactionsService.updateTransaction(LOGGED_IN_USER, requestBody);
 
         return ResponseEntity

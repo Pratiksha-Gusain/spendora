@@ -1,6 +1,7 @@
 package com.example.spendora.dto;
 
-public record CreateTransactionDto(
+public record TransactionRequestDto(
+        Long transactionId,
         String type,
         Double amount,
         String description,
@@ -10,5 +11,6 @@ public record CreateTransactionDto(
         String transactionDate,
         Long toAccountId
 
-){
+
+) {
 }

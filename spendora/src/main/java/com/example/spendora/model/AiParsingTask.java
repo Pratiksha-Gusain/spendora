@@ -20,18 +20,16 @@ public class AiParsingTask {
     private String content;
     private String errorMessage;
     private String correlationId;
-
-    @Builder.Default
-    private Long createdAt = System.currentTimeMillis();
+    private Long createdAt;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
     private AppUser appUser;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name="transaction_id")
     private Transaction transaction;
 }

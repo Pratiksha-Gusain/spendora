@@ -1,8 +1,9 @@
 package com.example.spendora.mapper;
 
 import com.example.spendora.dto.TransactionDto;
-import com.example.spendora.dto.UpdateTransactionDto;
+import com.example.spendora.dto.TransactionRequestDto;
 import com.example.spendora.model.*;
+import com.example.spendora.service.ai.AiParseResult;
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
@@ -22,13 +23,32 @@ public interface TransactionMapper {
     }
     TransactionDto transactionDtoToTransactionDto(Transaction transaction);
     List<TransactionDto> transactionDtosToTransactionDtos(List<Transaction> transaction);
+    TransactionRequestDto fromAiParseResult(AiParseResult aiP);
 
     @Mapping(target = "appUser", source = "appUserId", qualifiedByName = "idToAppUser")
     @Mapping(target = "paymentMode", source = "dto.paymentModeId", qualifiedByName = "idToPaymentMode")
     //@Mapping(target = "account", source = "dto.accountId", qualifiedByName = "idToAccount")
     @Mapping(target = "category", source = "dto.categoryId", qualifiedByName = "idToCategory")
+    //@Mapping(target = "amount", source = "dto", qualifiedByName = "mapAmount")
+
+    @Mapping( target ="account", ignore = true)
+    @Mapping( target ="amount", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateTransactionFromDto(UpdateTransactionDto dto, @MappingTarget Transaction entity, String appUserId);
+    void transactionFromRequestDto(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, String transderId, boolean isSourceAccount);
+
+    @AfterMapping
+    default void mapAmountAndAccount(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, boolean isSourceAccount){
+        final var type = TransactionType.valueOf(dto.type());
+        if(type == TransactionType.TRANSFER){
+            if(isSourceAccount){
+                entity.setAccount(Account.ofId(dto.toAccountId()));
+                entity.setAmount( -dto.amount());
+            }
+        }
+        entity.setAccount(Account.ofId(dto.accountId()));
+        entity.setAmount(type == TransactionType.EXPENSE ? -dto.amount() : dto.amount());
+        return;
+    }
 
     @Named("idToAppUser")
     default AppUser idToAppUser(String id){
