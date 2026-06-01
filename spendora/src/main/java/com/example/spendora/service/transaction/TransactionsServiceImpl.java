@@ -6,11 +6,14 @@ import com.example.spendora.exception.*;
 import com.example.spendora.mapper.TransactionMapper;
 import com.example.spendora.model.*;
 import com.example.spendora.repository.TransactionRepo;
-import com.example.spendora.service.appuser.AppUserService;
+import com.example.spendora.service.appuser.AppUserServiceImpl;
 import com.example.spendora.service.category.CategoryService;
 import com.example.spendora.service.paymentmode.PaymentModeService;
+import com.example.spendora.service.transaction.strategy.OperationType;
+import com.example.spendora.service.transaction.strategy.TxnTypeStrategyFactory;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import com.example.spendora.service.account.AccountService;
 
@@ -21,21 +24,23 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class TransactionsServiceImpl implements TransactionsService {
-    private final AppUserService appUserService;
+    private final AppUserServiceImpl appUserService;
     private final AccountService accountService;
     private final CategoryService categoryService;
     private final PaymentModeService paymentModeService;
     private final TransactionRepo transactionRepo;
     private final TransactionMapper transactionMapper;
+    private final TxnTypeStrategyFactory txnTypeStrategyFactory;
+
     @Transactional
     @Override
     public TransactionDto saveTransaction(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
         getAndValidateAccounts(requestBody, appUserId);
-        if(TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER){
-            return handleTransfer(appUserId, requestBody);
-        }
+        final var transactionType = TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER? TransactionType.TRANSFER: TransactionType.INCOME;
 
-        return handleExpenseOrIncome(appUserId, requestBody);
+        final var strategy = txnTypeStrategyFactory.getStrategy(transactionType);
+
+        return strategy.process(appUserId, requestBody, OperationType.CREATE);
     }
     public void getAndValidateAccounts(TransactionRequestDto dto, String appUserId){
         final var accountId = dto.accountId();
@@ -49,34 +54,6 @@ public class TransactionsServiceImpl implements TransactionsService {
         validateAccountCategoryAndPaymentMode(appUserId, accounts, categoryId, paymentModeId);
     }
 
-    private TransactionDto handleTransfer(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
-        accountService.updateBalance(requestBody.accountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), true );
-        accountService.updateBalance(requestBody.toAccountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), false);
-
-        final var transferId = UUID.randomUUID().toString();
-        final var debitTransaction = new Transaction();
-        transactionMapper.transactionFromRequestDto(requestBody, debitTransaction, appUserId, transferId, true);
-
-        final var creditTransaction = new Transaction();
-        transactionMapper.transactionFromRequestDto(requestBody, creditTransaction, appUserId, null, false );
-
-        transactionRepo.save(debitTransaction);
-
-
-        final var savedTransaction = transactionRepo.save(creditTransaction);
-
-        return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
-    }
-
-    private TransactionDto handleExpenseOrIncome(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
-        accountService.updateBalance(requestBody.accountId(), requestBody.amount(), requestBody.paymentModeId(), requestBody.type(), false );
-
-        final var transaction = new Transaction();
-        transactionMapper.transactionFromRequestDto(requestBody, transaction, appUserId, null, false);
-
-        final var savedTransaction = transactionRepo.save(transaction);
-        return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
-    }
 
     private static List<Long> getAccounts(Long accountId, String type, Long toAccountId) {
         List<Long> accounts = new ArrayList<>();
@@ -124,5 +101,12 @@ public class TransactionsServiceImpl implements TransactionsService {
     @Override
     public void deleteTransaction(String appUserId, Long transactionId) {
         transactionRepo.deleteByIdAndAppUserId(transactionId, appUserId);
+    }
+
+    @Override
+    public List<TransactionDto> getRecentTransactions(String userId) {
+        var transactions =  transactionRepo.findAllByAppUserRecent(userId, PageRequest.ofSize(5));
+
+        return transactionMapper.transactionDtosToTransactionDtos(transactions);
     }
 }

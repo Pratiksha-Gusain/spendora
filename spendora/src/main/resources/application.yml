@@ -2,13 +2,16 @@ spring:
   application:
     name: spendora
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/spendora
+    username: admin
+    password: password
   jpa:
     hibernate:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+jwt:
+  secret-key: CZg2TGqydf2CgKT9kO9Py4cQQFRzMK5KIIPnfN0XEUc=
+  expiration-time-access-token: 6000
 
 
 

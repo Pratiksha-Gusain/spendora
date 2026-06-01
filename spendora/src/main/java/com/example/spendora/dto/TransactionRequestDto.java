@@ -3,14 +3,13 @@ package com.example.spendora.dto;
 public record TransactionRequestDto(
         Long transactionId,
         String type,
-        Double amount,
         String description,
-        Long paymentModeId,
-        Long categoryId,
-        Long accountId,
+        Double amount,
         String transactionDate,
-        Long toAccountId
-
-
+        Long paymentModeId,
+        Long accountId,
+        Long categoryId,
+        Long toAccountId,
+        String transferId
 ) {
 }

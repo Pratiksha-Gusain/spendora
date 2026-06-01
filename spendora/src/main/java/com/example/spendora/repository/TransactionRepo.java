@@ -1,12 +1,14 @@
 package com.example.spendora.repository;
 import com.example.spendora.model.Transaction;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
+@Repository
 public interface TransactionRepo extends CrudRepository<Transaction, Long> {
     @Query("SELECT t " +
             "FROM Transaction t " +
@@ -20,4 +22,13 @@ public interface TransactionRepo extends CrudRepository<Transaction, Long> {
             "WHERE t.appUser.id = :appUserId " +
             "AND t.id = :transactionId")
     void deleteByIdAndAppUserId(Long transactionId, String appUserId);
+
+    List<Transaction> findAllByTransferId(String transferId);
+    //  ALTER TABLE your_table
+//  ALTER COLUMN your_column_name TYPE DATE
+//  USING TO_DATE(your_column_name, 'YYYY-MM-DD');
+    @Query("SELECT t FROM Transaction t "+
+            "WHERE t.appUser.id = :appUserId " +
+            "ORDER BY t.transactionDate DESC")
+    List<Transaction> findAllByAppUserRecent(String appUserId, Pageable pageable);
 }

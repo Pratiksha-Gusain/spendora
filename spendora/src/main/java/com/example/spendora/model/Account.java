@@ -20,10 +20,10 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String lastFourDigit;
+    private String lastFourDigits;
     private Double balance;
     private Long createdAt = System.currentTimeMillis();
-    private Long updatedAt= System.currentTimeMillis();
+    private Long updatedAt;
 
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")
@@ -41,4 +41,5 @@ public class Account {
     public static Account ofId(Long accountId) {
         return Account.builder().id(accountId).build();
     }
+
 }

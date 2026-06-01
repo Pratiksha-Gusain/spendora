@@ -1,5 +1,6 @@
 package com.example.spendora.service.account;
 
+import com.example.spendora.dto.AccountDto;
 import com.example.spendora.exception.InsufficientAccountBalanceException;
 import com.example.spendora.model.Account;
 
@@ -13,4 +14,7 @@ public interface AccountService {
     Account get(Long accountId);
 
     void update(Account account);
+
+    void reverseBalance(Long id, Double amount, Long paymentModeId, String type, boolean isSourceAccount);
+    List<AccountDto> getAllAccounts(String userId);
 }

@@ -7,6 +7,8 @@ import com.example.spendora.service.ai.AiParseResult;
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
@@ -21,9 +23,21 @@ public interface TransactionMapper {
     default String map(PaymentMode paymentMode) {
         return (paymentMode != null) ? paymentMode.getName() : null;
     }
+    @Mapping(target = "transactionId", source = "id")
     TransactionDto transactionDtoToTransactionDto(Transaction transaction);
+
+    @Named("convertStringToDate")
+    default LocalDate convertStringToDate(String transactionDate) {
+        return LocalDate.parse(transactionDate, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+    }
     List<TransactionDto> transactionDtosToTransactionDtos(List<Transaction> transaction);
-    TransactionRequestDto fromAiParseResult(AiParseResult aiP);
+    TransactionRequestDto fromAiParseResult(AiParseResult aiParseResult);
+    @Mapping(target = "transactionDate", source = "result.date")
+    @Mapping(target = "paymentModeId", source = "paymentModeId")
+    @Mapping(target = "accountId", source = "accountId")
+    @Mapping(target = "categoryId", source = "categoryId")
+
+    TransactionRequestDto fromAiParseTask(AiParseResult result, Long paymentModeId, Long accountId, Long categoryId);
 
     @Mapping(target = "appUser", source = "appUserId", qualifiedByName = "idToAppUser")
     @Mapping(target = "paymentMode", source = "dto.paymentModeId", qualifiedByName = "idToPaymentMode")
@@ -33,21 +47,28 @@ public interface TransactionMapper {
 
     @Mapping( target ="account", ignore = true)
     @Mapping( target ="amount", ignore = true)
+    @Mapping(target = "transferId", source = "transferId")
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void transactionFromRequestDto(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, String transderId, boolean isSourceAccount);
+    @Mapping(target = "transactionDate", source = "dto.transactionDate", qualifiedByName = "convertStringToDate")
+
+    void transactionFromRequestDto(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, String transferId, boolean isSourceAccount);
 
     @AfterMapping
     default void mapAmountAndAccount(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, boolean isSourceAccount){
         final var type = TransactionType.valueOf(dto.type());
-        if(type == TransactionType.TRANSFER){
-            if(isSourceAccount){
+        if (type == TransactionType.TRANSFER) {
+            if (isSourceAccount) {
+                entity.setAccount(Account.ofId(dto.accountId()));
+                entity.setAmount(-dto.amount());
+            } else {
                 entity.setAccount(Account.ofId(dto.toAccountId()));
-                entity.setAmount( -dto.amount());
+                entity.setAmount(dto.amount());
             }
+
+            return;
         }
         entity.setAccount(Account.ofId(dto.accountId()));
         entity.setAmount(type == TransactionType.EXPENSE ? -dto.amount() : dto.amount());
-        return;
     }
 
     @Named("idToAppUser")
@@ -66,4 +87,5 @@ public interface TransactionMapper {
     default Category idToCategory(Long id){
         return id != null ? Category.ofId(id) : null;
     }
+
 }

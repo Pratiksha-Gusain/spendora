@@ -19,17 +19,7 @@ public class CmdRunner implements CommandLineRunner {
     private final AccountRepo accountRepo;
     @Override
     public void run(String... args) throws Exception {
-      /*  final var dto = new CreateTransactionDto(
-                "Expense",
-                200.0,
-                "200 rs petrol",
-                1L,
-                1L,
-                1L,
-                "10-04-2026"
-        );
-        System.out.println(mapper.writeValueAsString(dto));
-        */
+
         if (appUserRepo.findAll().isEmpty()){
             final var bank = bankRepo.findByName("State Bank of India")
                     .orElseThrow();
@@ -47,8 +37,7 @@ public class CmdRunner implements CommandLineRunner {
                     .bank(bank)
                     .appUser(AppUser.ofId(savedUser.getId()))
                     .balance(2500.00)
-                    .lastFourDigit("0988")
-                    .updatedAt(System.currentTimeMillis())
+                    .lastFourDigits("0988")
                     .build();
             accountRepo.save(account);
         }

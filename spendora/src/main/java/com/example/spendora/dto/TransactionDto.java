@@ -1,7 +1,7 @@
 package com.example.spendora.dto;
 
 public record TransactionDto(
-        String id,
+        String transactionId,
         String type,
         Double amount,
         String description,

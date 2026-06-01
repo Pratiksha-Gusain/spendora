@@ -4,6 +4,7 @@ import com.example.spendora.model.Account;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface AccountRepo extends CrudRepository<Account, Long> {
@@ -14,5 +15,9 @@ public interface AccountRepo extends CrudRepository<Account, Long> {
             "AND a.id IN :accounts")
     boolean existsByAppUserIdAndAccountId(String appUserId, List<Long> accounts, int accountListCount);
 
-
+    @Query("SELECT a FROM Account a " +
+            "JOIN a.appUser u " +
+            "JOIN a.bank b " +
+            "WHERE u.id = :appUserId")
+    List<Account> findAllByAppUserId(String appUserId);
 }

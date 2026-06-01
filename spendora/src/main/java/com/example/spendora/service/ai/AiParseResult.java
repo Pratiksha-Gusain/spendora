@@ -4,10 +4,10 @@ import com.example.spendora.model.TransactionType;
 
 public record AiParseResult (
         TransactionType type,
-    Double amount,
     String description,
-    String transactionDate,
-    String errorMessage
-
+        Double amount,
+        String date,
+        String errorMessage,
+        String category
 ){
 }

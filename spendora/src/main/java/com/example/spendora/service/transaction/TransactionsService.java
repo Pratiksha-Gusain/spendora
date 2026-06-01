@@ -13,5 +13,7 @@ public interface TransactionsService {
 
     TransactionDto updateTransaction(String loggedInUser, TransactionRequestDto requestBody);
     void deleteTransaction(String appUserId, Long transactionId);
+
+    List<TransactionDto> getRecentTransactions(String userId);
 }
 

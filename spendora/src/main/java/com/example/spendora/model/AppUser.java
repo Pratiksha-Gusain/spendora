@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.Set;
 
@@ -22,6 +23,9 @@ import java.util.Set;
         private String email;
         private String password;
 
+
+        @ColumnDefault("false")
+        private boolean isOnboardingComplete;
         private Long createdAt = System.currentTimeMillis();
         private Long updatedAt;
         private Long lastLoginAt;

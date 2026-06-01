@@ -13,7 +13,7 @@ public class LogRequestCounter {
     private final AtomicInteger requestCounter;
     @Scheduled(fixedRate =  60000)
     public void logAndResetRequestCounter(){
-        log.info("Reset Counter. Request Processed: {}", requestCounter.get());
+        log.info("Reset Counter. Request Processed: {}", requestCounter.getAndSet(0));
 
     }
 }

@@ -1,7 +1,8 @@
 package com.example.spendora.service.appuser;
 
-import org.springframework.stereotype.Service;
+import com.example.spendora.dto.RegisterRequest;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-@Service
-public class AppUserService {
+public interface AppUserService extends UserDetailsService {
+    void registerUser(RegisterRequest request);
 }

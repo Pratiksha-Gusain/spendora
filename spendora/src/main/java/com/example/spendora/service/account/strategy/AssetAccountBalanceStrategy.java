@@ -1,12 +1,14 @@
-package com.example.spendora.service.transaction;
+package com.example.spendora.service.account.strategy;
 
 import com.example.spendora.exception.InsufficientAccountBalanceException;
 import com.example.spendora.model.Account;
 import com.example.spendora.model.TransactionType;
+import com.example.spendora.service.account.strategy.AccountBalanceStrategy;
+import com.example.spendora.service.transaction.TransactionBehavior;
 import org.springframework.stereotype.Component;
 
 @Component("AssetAccountBalanceStrategy")
-public class AssetAccountBalanceStrategy implements AccountBalanceStrategy{
+public class AssetAccountBalanceStrategy implements AccountBalanceStrategy {
     @Override
     public Double calculateBalance(Account account, Double amount, TransactionType transactionType, boolean isSourceAccount) throws InsufficientAccountBalanceException {
         if(transactionType == TransactionType.TRANSFER){
@@ -18,7 +20,9 @@ public class AssetAccountBalanceStrategy implements AccountBalanceStrategy{
             return account.getBalance() + amount;
 
         }
-        validate(account, amount);
+        if(transactionType == TransactionType.EXPENSE) {
+            validate(account, amount);
+        }
         return transactionType == TransactionType.EXPENSE ?
                 account.getBalance()-amount :
                 account.getBalance()+ amount;
