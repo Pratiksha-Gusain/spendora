@@ -1,17 +1,16 @@
 package com.example.spendora.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Card {
+@EqualsAndHashCode(callSuper = false)
+@Table(indexes = @Index(name = "idx_card_app_user_id", columnList = "app_user_id"))
+public class Card extends TenantAware {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,11 +20,12 @@ public class Card {
 
     private String lastFourDigits;
     private Double creditLimit;
-    private Long createdAt;
-    private Long updatedAt;
 
-
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     private Account account;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "app_user_id")
+    private AppUser appUser;
 }

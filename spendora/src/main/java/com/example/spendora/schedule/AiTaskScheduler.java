@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 @Component
@@ -21,21 +22,26 @@ public class AiTaskScheduler {
     private final AiService aiService;
     private final NotificationService notificationService;
     private final PriorityQueue<AiParsingTask> taskQueue = new PriorityQueue<>(Comparator.comparing(AiParsingTask::getCreatedAt));
-    @Scheduled(fixedRate =  5000)
+
+    @Scheduled(fixedRate = 5000)
     void scheduleAiTask() throws JsonProcessingException {
-        if(taskQueue.isEmpty()){
+        if (taskQueue.isEmpty()) {
             final var tasks = aiParseTaskService.getPendingTasks(Status.PENDING);
             taskQueue.addAll(tasks);
         }
-        if(!taskQueue.isEmpty()) {
+        if (!taskQueue.isEmpty()) {
             final var aiParsingTask = taskQueue.remove();
             aiParsingTask.setStatus(Status.PROCESSING);
             aiParseTaskService.save(aiParsingTask);
 
-            notificationService.send(
-                    JobStatusDto.of(aiParsingTask.getId().toString(),
-                            aiParsingTask.getStatus().name())
-            );
+            if (aiParsingTask.getAppUser() != null) {
+                notificationService.send(
+                        aiParsingTask.getAppUser().getId(),
+                        null,
+                        NotificationService.NotificationEvent.AI_TASK_PROCESSING,
+                        Map.of("jobId", aiParsingTask.getId().toString(), "status", "PROCESSING")
+                );
+            }
             aiService.parse(aiParsingTask);
         }
     }

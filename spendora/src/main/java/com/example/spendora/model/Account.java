@@ -15,15 +15,15 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Account {
+@EqualsAndHashCode(callSuper = false)
+@Table(indexes = @Index(name = "idx_account_app_user_id", columnList = "app_user_id"))
+public class Account extends TenantAware{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String lastFourDigits;
     private Double balance;
-    private Long createdAt = System.currentTimeMillis();
-    private Long updatedAt;
 
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name = "app_user_id")

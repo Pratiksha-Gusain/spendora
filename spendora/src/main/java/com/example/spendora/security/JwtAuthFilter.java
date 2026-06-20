@@ -41,12 +41,19 @@ public class JwtAuthFilter  extends OncePerRequestFilter {
             SecurityContextHolder.getContext()
                     .setAuthentication(authenticatedToken);
 
+            // Set the tenant context for Hibernate filter scoping
+            final var principal = (String) authenticatedToken.getPrincipal();
+            TenantContext.setTenantId(principal);
         } catch (AuthenticationException e) {
             SecurityContextHolder.clearContext();
             return;
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private Optional<String> extractToken(String authorizationHeader) {

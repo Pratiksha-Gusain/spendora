@@ -11,12 +11,16 @@ import com.example.spendora.service.category.CategoryService;
 import com.example.spendora.service.paymentmode.PaymentModeService;
 import com.example.spendora.service.transaction.strategy.OperationType;
 import com.example.spendora.service.transaction.strategy.TxnTypeStrategyFactory;
+import com.example.spendora.specification.TransactionSpecification;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.example.spendora.service.account.AccountService;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +28,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class TransactionsServiceImpl implements TransactionsService {
-    private final AppUserServiceImpl appUserService;
     private final AccountService accountService;
     private final CategoryService categoryService;
     private final PaymentModeService paymentModeService;
@@ -34,70 +37,100 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Transactional
     @Override
-    public TransactionDto saveTransaction(String appUserId, TransactionRequestDto requestBody) throws InsufficientAccountBalanceException {
+    public TransactionDto saveTransaction(String appUserId, TransactionRequestDto requestBody)
+            throws InsufficientAccountBalanceException {
+
         getAndValidateAccounts(requestBody, appUserId);
-        final var transactionType = TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER? TransactionType.TRANSFER: TransactionType.INCOME;
+
+        final var transactionType = TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER
+                ? TransactionType.TRANSFER
+                : TransactionType.INCOME;
 
         final var strategy = txnTypeStrategyFactory.getStrategy(transactionType);
 
         return strategy.process(appUserId, requestBody, OperationType.CREATE);
     }
-    public void getAndValidateAccounts(TransactionRequestDto dto, String appUserId){
+
+    private void getAndValidateAccounts(TransactionRequestDto dto, String appUserId) {
         final var accountId = dto.accountId();
         final var categoryId = dto.categoryId();
         final var paymentModeId = dto.paymentModeId();
         final var toAccountId = dto.toAccountId();
         final var type = dto.type();
 
-        List<Long> accounts = getAccounts(accountId, type, toAccountId);
+        final var accounts = getAccounts(accountId, toAccountId, type);
 
         validateAccountCategoryAndPaymentMode(appUserId, accounts, categoryId, paymentModeId);
     }
 
-
-    private static List<Long> getAccounts(Long accountId, String type, Long toAccountId) {
+    private static List<Long> getAccounts(Long accountId, Long toAccountId, String type) {
         List<Long> accounts = new ArrayList<>();
         accounts.add(accountId);
 
-        if(TransactionType.valueOf(type) == TransactionType.TRANSFER){
-
+        if (TransactionType.valueOf(type) == TransactionType.TRANSFER) {
             accounts.add(toAccountId);
         }
         return accounts;
     }
 
-    private void validateAccountCategoryAndPaymentMode(String appUserId,  List<Long> accounts, Long categoryId, Long paymentModeId) {
-        final var accountExists = accountService.accountExistByUserandAccount(appUserId, accounts);
-        if(!accountExists) {
-           throw new AccountNotOwnedByUserException(accounts, appUserId);
+    private void validateAccountCategoryAndPaymentMode(String appUserId, List<Long> accounts, Long categoryId,
+                                                       Long paymentModeId) {
+        final var accountExists = accountService.existsByUserAndAccount(appUserId, accounts);
+
+        if (!accountExists) {
+            throw new AccountNotOwnedByUserException(accounts, appUserId);
         }
 
-        final var categoryExists = categoryService.existByUserAndCategory(appUserId, categoryId);
-        if(!categoryExists){
+        boolean isSystemCategory = categoryId == null || categoryId > 0;
+        Long resolvedCategoryId = categoryId != null ? Math.abs(categoryId) : null;
+        final var categoryExists = categoryService.existsByUserAndCategory(appUserId, resolvedCategoryId, isSystemCategory);
+
+        if (!categoryExists) {
             throw new CategoryNotFoundException(categoryId);
         }
 
-        final var paymentModeExists = paymentModeService.existById(paymentModeId);
-        if(!paymentModeExists){
-            throw new PaymentModeNotFoundException(paymentModeId);
+        final var paymentModeExists = paymentModeService.existsById(paymentModeId);
+
+        if (!paymentModeExists) {
+            throw new PaymentModeNotFoundException(categoryId);
         }
     }
 
     @Override
-    public List<TransactionDto> getAllTransactions(String appUserId){
-        final var transactions = transactionRepo.findAllByAppUser(appUserId);
-        return transactionMapper.transactionDtosToTransactionDtos(transactions);
+    public Page<TransactionDto> getAllTransactions(
+            String appUserId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Double minAmount,
+            Double maxAmount,
+            List<TransactionType> types,
+            List<Long> categoryIds,
+            List<Long> accountIds,
+            List<Long> paymentModeIds,
+            String search,
+            Pageable pageable
+    ) {
+        final var spec = TransactionSpecification.filterTransactions(
+                appUserId, startDate, endDate, minAmount, maxAmount, types, categoryIds, accountIds, paymentModeIds, search
+        );
+        final var transactionPage = transactionRepo.findAll(spec, pageable);
+        return transactionPage.map(transactionMapper::transactionDtoToTransactionDto);
     }
-    @Override
-    public TransactionDto updateTransaction(String appUserId, TransactionRequestDto requestBody) {
-       getAndValidateAccounts(requestBody, appUserId);
 
-        final var transaction = transactionRepo.findById(requestBody.transactionId())
-                .orElseThrow(()-> new TransactionNotFoundException(requestBody.transactionId()));
-        transactionMapper.transactionFromRequestDto(requestBody, transaction, appUserId, null, false );
-        final var savedTransaction = transactionRepo.save(transaction);
-        return transactionMapper.transactionDtoToTransactionDto(savedTransaction);
+    @Override
+    public TransactionDto updateTransaction(String appUserId, TransactionRequestDto requestBody)
+            throws InsufficientAccountBalanceException {
+        getAndValidateAccounts(requestBody, appUserId);
+
+        final var transactionType = TransactionType.valueOf(requestBody.type()) == TransactionType.TRANSFER
+                ? TransactionType.TRANSFER
+                : TransactionType.INCOME;
+
+        final var strategy = txnTypeStrategyFactory.getStrategy(transactionType);
+
+        return strategy.process(appUserId, requestBody, OperationType.UPDATE);
     }
+
     @Override
     public void deleteTransaction(String appUserId, Long transactionId) {
         transactionRepo.deleteByIdAndAppUserId(transactionId, appUserId);
@@ -105,7 +138,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     public List<TransactionDto> getRecentTransactions(String userId) {
-        var transactions =  transactionRepo.findAllByAppUserRecent(userId, PageRequest.ofSize(5));
+        var transactions = transactionRepo.findAllByAppUserIdOrderByTransactionDateDesc(userId, PageRequest.ofSize(5));
 
         return transactionMapper.transactionDtosToTransactionDtos(transactions);
     }

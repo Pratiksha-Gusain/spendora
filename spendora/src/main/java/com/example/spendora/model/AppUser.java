@@ -26,6 +26,8 @@ import java.util.Set;
 
         @ColumnDefault("false")
         private boolean isOnboardingComplete;
+
+        @Builder.Default
         private Long createdAt = System.currentTimeMillis();
         private Long updatedAt;
         private Long lastLoginAt;
@@ -47,7 +49,7 @@ import java.util.Set;
         private Set<Transaction> transactionSet;
 
         @OneToMany(mappedBy = "appUser", fetch = FetchType.LAZY)
-        private Set<Category> categorySet;
+        private Set<UserCategory> userCategorySet;
 
         public static AppUser ofId(String id){
             return AppUser.builder().id(id).build();

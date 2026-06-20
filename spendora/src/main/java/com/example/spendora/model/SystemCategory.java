@@ -1,6 +1,7 @@
 package com.example.spendora.model;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,27 +9,27 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+/**
+ * Global system-defined categories available to all users.
+ * These are seeded at application startup and not owned by any tenant.
+ */
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Category {
+public class SystemCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String name;
 
-    @OneToMany(mappedBy="category", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "systemCategory", fetch = FetchType.LAZY)
     private Set<Transaction> transactionSet;
 
-    @ManyToOne(cascade = CascadeType.ALL , fetch = FetchType.LAZY)
-    @JoinColumn(name = "app_user_id")
-    private AppUser appUser;
-
-    public static Category ofId(Long categoryId) {
-
-        return Category.builder().id(categoryId).build();
+    public static SystemCategory ofId(Long id) {
+        return SystemCategory.builder().id(id).build();
     }
 }

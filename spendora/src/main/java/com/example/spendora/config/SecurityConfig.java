@@ -3,6 +3,7 @@ package com.example.spendora.config;
 import com.example.spendora.security.BearerAuthProvider;
 import com.example.spendora.security.JwtAuthFilter;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +40,8 @@ public class SecurityConfig {
                 .csrf(CsrfConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(http -> http
-                        .requestMatchers("/api/auth/**")
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                        .requestMatchers("/api/auth/**", "/error")
                         .permitAll()
                         .anyRequest()
                         .authenticated())

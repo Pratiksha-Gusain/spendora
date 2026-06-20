@@ -15,7 +15,7 @@ import java.util.List;
 public interface TransactionMapper {
     TransactionMapper INSTANCE = Mappers.getMapper(TransactionMapper.class);
     // 1. Tell MapStruct how to turn a Category object into a String
-    default String map(Category category) {
+    default String map(SystemCategory category) {
         return (category != null) ? category.getName() : null;
     }
 
@@ -54,6 +54,21 @@ public interface TransactionMapper {
     void transactionFromRequestDto(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, String transferId, boolean isSourceAccount);
 
     @AfterMapping
+    default void mapCategory(TransactionRequestDto dto, @MappingTarget Transaction entity) {
+        if (dto.categoryId() != null) {
+            if (dto.categoryId() < 0) {
+                entity.setUserCategory(UserCategory.ofId(Math.abs(dto.categoryId())));
+                entity.setSystemCategory(null);
+            } else {
+                entity.setSystemCategory(SystemCategory.ofId(dto.categoryId()));
+                entity.setUserCategory(null);
+            }
+        } else {
+            entity.setSystemCategory(null);
+            entity.setUserCategory(null);
+        }
+    }
+    @AfterMapping
     default void mapAmountAndAccount(TransactionRequestDto dto, @MappingTarget Transaction entity, String appUserId, boolean isSourceAccount){
         final var type = TransactionType.valueOf(dto.type());
         if (type == TransactionType.TRANSFER) {
@@ -83,9 +98,13 @@ public interface TransactionMapper {
     default Account idToAccount(Long id){
         return id != null ? Account.ofId(id) : null;
     }
-    @Named("idToCategory")
-    default Category idToCategory(Long id){
-        return id != null ? Category.ofId(id) : null;
+    @Named("idToSystemCategory")
+    default SystemCategory idToSystemCategory(Long id) {
+        return id != null ? SystemCategory.ofId(id) : null;
+    }
+    @Named("idToUserCategory")
+    default UserCategory idToUserCategory(Long id) {
+        return id != null ? UserCategory.ofId(id) : null;
     }
 
 }

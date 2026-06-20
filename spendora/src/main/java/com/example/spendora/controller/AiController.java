@@ -1,28 +1,34 @@
 package com.example.spendora.controller;
 
+import com.example.spendora.dto.AiActiveTaskDto;
 import com.example.spendora.dto.AiInputDto;
 import com.example.spendora.dto.AiTaskDto;
 import com.example.spendora.dto.TransactionRequestDto;
 import com.example.spendora.service.ai.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ai-input")
 @RequiredArgsConstructor
 public class AiController {
-    private static final String LOGGED_IN_USER = "f6f2435f-08ac-4b8d-a705-8449ac607685";
 
     private final AiService aiService;
 
     @PostMapping
-    public ResponseEntity<AiTaskDto> parseRawText(@RequestBody AiInputDto requestBody){
-        final var response = aiService.save(LOGGED_IN_USER, requestBody);
+    public ResponseEntity<AiTaskDto> parseRawText(@RequestBody AiInputDto requestBody,
+                                                  @AuthenticationPrincipal String userId) {
+        final var response = aiService.save(userId, requestBody);
 
-        return  ResponseEntity.ok(response);
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/active")
+    public ResponseEntity<List<AiActiveTaskDto>> getActiveTasks(@AuthenticationPrincipal String userId) {
+        final var activeTasks = aiService.getActiveTasks(userId);
+        return ResponseEntity.ok(activeTasks);
     }
 }

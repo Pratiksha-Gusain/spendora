@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class PaymentModeServiceImpl implements PaymentModeService{
     private final PaymentModeRepo paymentModeRepo;
     @Override
-    public boolean existById(Long paymentModeId){
+    public boolean existsById(Long paymentModeId){
         return paymentModeRepo.existsById(paymentModeId);
     }
 

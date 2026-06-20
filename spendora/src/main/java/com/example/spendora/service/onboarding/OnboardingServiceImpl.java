@@ -49,7 +49,6 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .appUser(appUser)
                 .balance(request.bankBalance())
                 .lastFourDigits(request.lastFourDigits())
-                .createdAt(System.currentTimeMillis())
                 .build();
         final var savedBankAccount = accountRepo.save(bankAccount);
 
@@ -60,7 +59,6 @@ public class OnboardingServiceImpl implements OnboardingService {
                     .cardType(request.cardType())
                     .lastFourDigits(request.cardLastFourDigits())
                     .creditLimit(request.cardLimit() != null ? request.cardLimit() : 0.0)
-                    .createdAt(System.currentTimeMillis())
                     .build();
             cardRepo.save(card);
         }
@@ -71,7 +69,6 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .appUser(appUser)
                 .balance(request.cashBalance() != null ? request.cashBalance() : 0.0)
                 .lastFourDigits("CASH")
-                .createdAt(System.currentTimeMillis())
                 .build();
         accountRepo.save(cashAccount);
 
@@ -81,8 +78,6 @@ public class OnboardingServiceImpl implements OnboardingService {
                 .defaultPaymentMode(paymentMode)
                 .defaultAccount(savedBankAccount)
                 .languagePreference(request.languagePreference() != null ? request.languagePreference() : LanguagePreference.ENGLISH)
-                .createdAt(System.currentTimeMillis())
-                .updatedAt(System.currentTimeMillis())
                 .build();
         userConfigRepo.save(userConfig);
 
