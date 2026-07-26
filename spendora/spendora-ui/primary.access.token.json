@@ -1,0 +1,7 @@
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1N2I0YThmNy1mZjhlLTRhYTUtYmNmMS02NDcwZWRmOGVlMDgiLCJqdGkiOiIyODYwMWU4Zi04MmE2LTQ4NzctOTEzMS0yNTU4NjEzMDBlZTMiLCJpYXQiOjE3ODAzMTY3MDYsImV4cCI6MTc4MDMyMjcwNiwicm9sZXMiOlsiUk9MRV9VU0VSIl19.tixqGxWkHuZYQUt2FhulwBYuvrDub3IuUJaSM8iUCd4",
+  "tokenType": "Bearer",
+  "expiresInSeconds": 6000,
+  "onboarded": false
+
+}
